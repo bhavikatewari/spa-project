@@ -3,7 +3,10 @@
  * Developer: Bhavika Tewari
  */
 
-// Route view templates
+// Dynamically handle GitHub Pages subfolder repo path
+const BASE_PATH = window.location.pathname.startsWith('/spa-project') ? '/spa-project' : '';
+
+// Route view templates (using relative route keys)
 const routes = {
     '/': {
         title: 'Home | Bhavika Tewari',
@@ -13,7 +16,7 @@ const routes = {
                 <p class="subtitle">First-Year BCA Student & Aspiring Web Developer</p>
                 <p>This Single Page Application dynamically loads views using vanilla JavaScript and the HTML5 History API without triggering page refreshes.</p>
                 <br>
-                <a href="/skills" class="btn nav-link" data-route="/skills">Explore My Skills</a>
+                <a href="${BASE_PATH}/skills" class="btn nav-link" data-route="/skills">Explore My Skills</a>
             </section>
         `
     },
@@ -69,19 +72,30 @@ const routes = {
 const appContainer = document.getElementById('app');
 
 /**
- * Render view based on route path
- * @param {string} pathname 
+ * Get current normalized route path without the repository prefix
  */
-function navigateTo(pathname) {
-    const route = routes[pathname] || {
+function getNormalizedPath() {
+    let path = window.location.pathname;
+    if (BASE_PATH && path.startsWith(BASE_PATH)) {
+        path = path.replace(BASE_PATH, '');
+    }
+    return path === '' ? '/' : path;
+}
+
+/**
+ * Render view based on route path
+ * @param {string} routePath 
+ */
+function navigateTo(routePath) {
+    const route = routes[routePath] || {
         title: '404 - Not Found',
         render: () => `
             <section class="view info-card">
                 <h1>404</h1>
                 <p class="subtitle">Page Not Found</p>
-                <p>The requested path "<code>${pathname}</code>" does not exist.</p>
+                <p>The requested path "<code>${routePath}</code>" does not exist.</p>
                 <br>
-                <a href="/" class="btn nav-link" data-route="/">Return Home</a>
+                <a href="${BASE_PATH}/" class="btn nav-link" data-route="/">Return Home</a>
             </section>
         `
     };
@@ -99,16 +113,16 @@ function navigateTo(pathname) {
     });
 
     // Update active state on navbar
-    updateNavActiveState(pathname);
+    updateNavActiveState(routePath);
 }
 
 /**
  * Update navigation highlight styling
- * @param {string} pathname 
+ * @param {string} routePath 
  */
-function updateNavActiveState(pathname) {
+function updateNavActiveState(routePath) {
     document.querySelectorAll('.nav-link').forEach(link => {
-        if (link.getAttribute('data-route') === pathname) {
+        if (link.getAttribute('data-route') === routePath) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');
@@ -118,27 +132,27 @@ function updateNavActiveState(pathname) {
 
 /**
  * Handle route changes and history pushState
- * @param {Event} e 
  */
 document.addEventListener('click', (e) => {
     const targetLink = e.target.closest('[data-route]');
     if (targetLink) {
         e.preventDefault();
-        const targetRoute = targetLink.getAttribute('data-route');
+        const routePath = targetLink.getAttribute('data-route');
+        const fullUrl = BASE_PATH + (routePath === '/' ? '/' : routePath);
         
-        if (window.location.pathname !== targetRoute) {
-            window.history.pushState({}, '', targetRoute);
-            navigateTo(targetRoute);
+        if (getNormalizedPath() !== routePath) {
+            window.history.pushState({}, '', fullUrl);
+            navigateTo(routePath);
         }
     }
 });
 
 // Handle browser Back / Forward buttons
 window.addEventListener('popstate', () => {
-    navigateTo(window.location.pathname);
+    navigateTo(getNormalizedPath());
 });
 
 // Initial application load
 document.addEventListener('DOMContentLoaded', () => {
-    navigateTo(window.location.pathname);
+    navigateTo(getNormalizedPath());
 });
